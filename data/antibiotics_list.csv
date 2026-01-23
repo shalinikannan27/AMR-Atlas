@@ -1,0 +1,101 @@
+Name,Family,Usage,Popular Brand Name
+Amoxicillin,Penicillin,"Bacterial infections (ear, nose, throat, skin)","Amoxil, Trimox"
+Ciprofloxacin,Fluoroquinolone,"Bacterial infections (UTI, respiratory)",Cipro
+Doxycycline,Tetracycline,"Bacterial infections, acne, malaria prophylaxis","Vibramycin, Oracea"
+Azithromycin,Macrolide,"Bacterial infections (respiratory, skin)","Zithromax, Z-Pak"
+Cephalexin,Cephalosporin,"Bacterial infections (skin, bone, ear)",Keflex
+Trimethoprim/Sulfamethoxazole,Sulfonamide,"UTIs, MRSA infections","Bactrim, Septra"
+Levofloxacin,Fluoroquinolone,"Bacterial infections (pneumonia, UTI, skin)",Levaquin
+Clindamycin,Lincosamide,"Bacterial infections (skin, soft tissue)",Cleocin
+Metronidazole,Nitroimidazole,"Bacterial and protozoal infections (anaerobic bacteria, trichomoniasis)",Flagyl
+Penicillin V,Penicillin,"Streptococcal infections (throat), pneumococcal infections",Veetids
+Vancomycin,Glycopeptide,"MRSA infections, severe infections",Vancocin
+Erythromycin,Macrolide,"Respiratory tract infections, syphilis",Erythrocin
+Tetracycline,Tetracycline,"Acne, bacterial infections",Sumycin
+Amikacin,Aminoglycoside,Severe hospital-acquired infections,Amikin
+Gentamicin,Aminoglycoside,Severe hospital-acquired infections,Garamycin
+Linezolid,Oxazolidinone,"MRSA infections, VRE infections",Zyvox
+Nitrofurantoin,Nitrofuran,Urinary tract infections,"Macrobid, Furadantin"
+Rifampin,Rifamycin,"Tuberculosis, leprosy",Rifadin
+Tobramycin,Aminoglycoside,Severe hospital-acquired infections,Tobrex
+Minocycline,Tetracycline,"Acne, bacterial infections",Minocin
+Moxifloxacin,Fluoroquinolone,"Respiratory tract infections, conjunctivitis",Avelox
+Daptomycin,Lipopeptide,"Skin infections, bloodstream infections",Cubicin
+Tigecycline,Glycylcycline,Complicated skin and intra-abdominal infections,Tygacil
+Fosfomycin,Phosphonic acid,UTIs,Monurol
+Colistin,Polymyxin,Multi-drug resistant infections,"Colomycin, Polymyxin E"
+Meropenem,Carbapenem,Severe bacterial infections,Merrem
+Isoniazid,Antimycobacterial,Tuberculosis,Nydrazid
+Ethambutol,Antimycobacterial,Tuberculosis,Myambutol
+Piperacillin/Tazobactam,Penicillin,"Intra-abdominal infections, pneumonia",Zosyn
+Ceftriaxone,Cephalosporin,"Bacterial infections, meningitis",Rocephin
+Ceftazidime,Cephalosporin,"Bacterial infections, pneumonia","Fortaz, Tazicef"
+Ceftaroline,Cephalosporin,"Skin infections, pneumonia",Teflaro
+Cefepime,Cephalosporin,Hospital-acquired infections,Maxipime
+Imipenem/Cilastatin,Carbapenem,Severe bacterial infections,Primaxin
+Aztreonam,Monobactam,Gram-negative bacterial infections,Azactam
+Teicoplanin,Glycopeptide,"Skin infections, MRSA infections",Targocid
+Cefuroxime,Cephalosporin,"Bacterial infections, UTIs","Ceftin, Zinacef"
+Cefdinir,Cephalosporin,"Respiratory infections, skin infections",Omnicef
+Cefixime,Cephalosporin,Bacterial infections,Suprax
+Cefadroxil,Cephalosporin,Skin and throat infections,Duricef
+Ceftobiprole,Cephalosporin,"MRSA infections, pneumonia",Zeftera
+Dalbavancin,Lipoglycopeptide,Skin and soft tissue infections,Dalvance
+Oritavancin,Lipoglycopeptide,Skin and soft tissue infections,Orbactiv
+Telavancin,Lipoglycopeptide,Hospital-acquired pneumonia,Vibativ
+Tedizolid,Oxazolidinone,Skin and soft tissue infections,Sivextro
+Ceftolozane/Tazobactam,Cephalosporin,Complicated intra-abdominal infections,Zerbaxa
+Ceftaroline Fosamil,Cephalosporin,"Skin and soft tissue infections, pneumonia",Teflaro
+Ertapenem,Carbapenem,Bacterial infections,Invanz
+Doripenem,Carbapenem,"Complicated UTIs, intra-abdominal infections",Doribax
+Polymyxin B,Polymyxin,Severe bacterial infections,Polymyxin B
+Streptomycin,Aminoglycoside,"Tuberculosis, plague",Streptomycin
+Neomycin,Aminoglycoside,Topical infections,Neosporin
+Bacitracin,Polypeptide,Skin infections,Bacitracin
+Spectinomycin,Aminocyclitol,Gonorrhea,Trobicin
+Amphotericin B,Polyene,Fungal infections,Fungizone
+Nystatin,Polyene,Fungal infections,Nystatin
+Ketoconazole,Azole,Fungal infections,Nizoral
+Fluconazole,Azole,"Candidiasis, cryptococcal meningitis",Diflucan
+Itraconazole,Azole,Fungal infections,Sporanox
+Voriconazole,Azole,Fungal infections,Vfend
+Clotrimazole,Azole,Fungal infections,Lotrimin
+Miconazole,Azole,Fungal infections,Monistat
+Terbinafine,Allylamine,Fungal skin infections,Lamisil
+Caspofungin,Echinocandin,"Fungal infections, candidiasis",Cancidas
+Micafungin,Echinocandin,"Fungal infections, candidiasis",Mycamine
+Anidulafungin,Echinocandin,"Fungal infections, candidiasis",Eraxis
+Griseofulvin,Antifungal,Fungal infections,Grifulvin V
+Posaconazole,Azole,Fungal infections,Noxafil
+Isavuconazole,Azole,Fungal infections,Cresemba
+Natamycin,Polyene,Fungal eye infections,Natacyn
+Rifaximin,Rifamycin,"Traveler's diarrhea, hepatic encephalopathy",Xifaxan
+Fidaxomicin,Macrocyclic,C. difficile infections,Dificid
+Quinupristin/Dalfopristin,Streptogramin,"Severe skin infections, MRSA",Synercid
+Dapsone,Sulfone,"Leprosy, dermatitis herpetiformis",Dapsone
+Rifabutin,Rifamycin,"Tuberculosis, MAC infections",Mycobutin
+Colistimethate Sodium,Polymyxin,Multi-drug resistant infections,Colomycin
+Fosfomycin Tromethamine,Phosphonic acid,UTIs,Monurol
+Tinidazole,Nitroimidazole,Protozoal infections,Tindamax
+Secnidazole,Nitroimidazole,Bacterial vaginosis,Solosec
+Furazolidone,Nitrofuran,Gastrointestinal infections,Furoxone
+Chloramphenicol,Amphenicol,"Bacterial infections, typhoid fever",Chloromycetin
+Linezolid,Oxazolidinone,"MRSA infections, VRE infections",Zyvox
+Tigecycline,Glycylcycline,Complicated skin and intra-abdominal infections,Tygacil
+Mupirocin,Monoxycarbolic acid,"Impetigo, MRSA nasal colonization",Bactroban
+Fusidic Acid,Steroid antibiotic,"Skin infections, MRSA",Fucidin
+Nitrofurantoin,Nitrofuran,UTIs,"Macrobid, Furadantin"
+Trimethoprim,Dihydrofolate reductase inhibitor,"UTIs, respiratory tract infections",Proloprim
+Sulfamethoxazole/Trimethoprim,Sulfonamide,"UTIs, MRSA infections","Bactrim, Septra"
+Teicoplanin,Glycopeptide,"Serious Gram-positive infections, including MRSA",Targocid
+Telithromycin,Ketolide,Community-acquired pneumonia,Ketek
+Fosfomycin,Phosphonic acid,"UTIs, multi-drug resistant infections",Monurol
+Eravacycline,Tetracycline,Complicated intra-abdominal infections,Xerava
+Omadacycline,Tetracycline,"Acute bacterial skin infections, community-acquired pneumonia",Nuzyra
+Sarecycline,Tetracycline,Acne,Seysara
+Lefamulin,Pleuromutilin,Community-acquired bacterial pneumonia,Xenleta
+Dalbavancin,Lipoglycopeptide,Skin and soft tissue infections,Dalvance
+Oritavancin,Lipoglycopeptide,Acute bacterial skin infections,Orbactiv
+Tedizolid,Oxazolidinone,Skin infections,Sivextro
+Ceftaroline fosamil,Cephalosporin,"Skin infections, community-acquired pneumonia",Teflaro
+Solithromycin,Macrolide,Community-acquired bacterial pneumonia,Solithera
