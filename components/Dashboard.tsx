@@ -293,11 +293,7 @@ const Dashboard: React.FC = () => {
 
 
     useEffect(() => {
-<<<<<<< HEAD
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/countries`)
-=======
       fetch("http://127.0.0.1:5000/countries")
->>>>>>> cc496ced77502ba92e93b2a8e0ce762ca9571e36
         .then(res => res.json())
         .then(data => {
           setCountries(data);
@@ -317,11 +313,7 @@ const Dashboard: React.FC = () => {
       setWhyExpanded(false);
 
       try {
-<<<<<<< HEAD
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/predict`, {
-=======
         const response = await fetch("http://127.0.0.1:5000/predict", {
->>>>>>> cc496ced77502ba92e93b2a8e0ce762ca9571e36
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -942,11 +934,7 @@ const Dashboard: React.FC = () => {
     const [data, setData] = useState<any[]>([]);
 
     useEffect(() => {
-<<<<<<< HEAD
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/selective-pressure`)
-=======
       fetch('http://127.0.0.1:5000/selective-pressure')
->>>>>>> cc496ced77502ba92e93b2a8e0ce762ca9571e36
         .then(res => res.json())
         .then(data => setData(data))
         .catch(err => console.error("Failed to fetch selective pressure", err));
@@ -1055,11 +1043,7 @@ const Dashboard: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
 
     useEffect(() => {
-<<<<<<< HEAD
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/exposure-pathways`)
-=======
       fetch('http://127.0.0.1:5000/exposure-pathways')
->>>>>>> cc496ced77502ba92e93b2a8e0ce762ca9571e36
         .then(res => res.json())
         .then(data => setData(data))
         .catch(err => console.error("Failed to fetch exposure pathways", err));

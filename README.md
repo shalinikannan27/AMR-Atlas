@@ -1,3 +1,4 @@
+
 # Antibiotic Resistance Dashboard
 
 ## How to Run
@@ -40,3 +41,6 @@ This application consists of a **Python Flask Backend** and a **React Frontend**
 ### Step 3: Access the Application
 Open your browser and navigate to:
 **[http://localhost:3000](http://localhost:3000)**
+
+# AMR-Atlas
+
