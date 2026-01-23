@@ -1,0 +1,56 @@
+[
+  {
+    "PathogenName":"Acinetobacter spp.",
+    "exposure_cluster":"narrow_exposure",
+    "infection_record_count":8,
+    "antibiotic_group_count":1,
+    "infection_diversity":1.0,
+    "antibiotic_diversity":0.5,
+    "total_testing_coverage":466666.0
+  },
+  {
+    "PathogenName":"Escherichia coli",
+    "exposure_cluster":"broad_exposure",
+    "infection_record_count":8,
+    "antibiotic_group_count":2,
+    "infection_diversity":1.0,
+    "antibiotic_diversity":1.0,
+    "total_testing_coverage":6412677.0
+  },
+  {
+    "PathogenName":"Klebsiella pneumoniae",
+    "exposure_cluster":"moderate_exposure",
+    "infection_record_count":8,
+    "antibiotic_group_count":2,
+    "infection_diversity":1.0,
+    "antibiotic_diversity":1.0,
+    "total_testing_coverage":2437017.0
+  },
+  {
+    "PathogenName":"Salmonella spp.",
+    "exposure_cluster":"narrow_exposure",
+    "infection_record_count":8,
+    "antibiotic_group_count":1,
+    "infection_diversity":1.0,
+    "antibiotic_diversity":0.5,
+    "total_testing_coverage":141454.0
+  },
+  {
+    "PathogenName":"Staphylococcus aureus",
+    "exposure_cluster":"narrow_exposure",
+    "infection_record_count":8,
+    "antibiotic_group_count":1,
+    "infection_diversity":1.0,
+    "antibiotic_diversity":0.5,
+    "total_testing_coverage":2094610.0
+  },
+  {
+    "PathogenName":"Streptococcus pneumoniae",
+    "exposure_cluster":"narrow_exposure",
+    "infection_record_count":8,
+    "antibiotic_group_count":1,
+    "infection_diversity":1.0,
+    "antibiotic_diversity":0.5,
+    "total_testing_coverage":300548.0
+  }
+]
