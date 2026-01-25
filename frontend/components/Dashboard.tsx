@@ -951,13 +951,18 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filterBreadth, setFilterBreadth] = useState<'All' | 'Narrow' | 'Moderate' | 'Broad'>('All');
+    const [showGroupingInfo, setShowGroupingInfo] = useState(false);
 
     useEffect(() => {
+      console.log('[Selective Pressure] Fetching data...');
       setLoading(true);
       setError(null);
       apiGet<unknown>('/selective-pressure')
         .then((res) => {
-          setData(Array.isArray(res) ? res : []);
+          console.log('[Selective Pressure] Raw API response:', res);
+          const arr = Array.isArray(res) ? res : [];
+          console.log('[Selective Pressure] Parsed array length:', arr.length);
+          setData(arr);
           setError(null);
         })
         .catch((err) => {
@@ -965,9 +970,11 @@ const Dashboard: React.FC = () => {
           setError(err instanceof Error ? err.message : 'Failed to load selective pressure data');
           setData([]);
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          console.log('[Selective Pressure] Loading complete');
+          setLoading(false);
+        });
     }, []);
-    const [showGroupingInfo, setShowGroupingInfo] = useState(false);
 
     const exposureMap: Record<string, string> = {
       "All": "all",
@@ -1036,8 +1043,8 @@ const Dashboard: React.FC = () => {
             {Object.entries(grouped).map(([category, items]: [string, any], idx: number) => (
               <div key={idx} className="bg-[#F8FBFD] p-6 rounded-2xl border border-[#E1E8ED] hover:shadow-md transition-shadow group/card relative">
                 <div className="flex items-center gap-3 mb-4 cursor-help" title="Represents exposure breadth observed across multiple treatment contexts.">
-                  <div className={`w-3 h-3 rounded-full ${category.includes('Broad') ? 'bg-red-400' : category.includes('Moderate') ? 'bg-amber-400' : 'bg-green-400'}`}></div>
-                  <h3 className="text-xl font-bold text-[#0F4C75]">{category}</h3>
+                  <div className={`w-3 h-3 rounded-full ${category.toLowerCase().includes('broad') ? 'bg-red-400' : category.toLowerCase().includes('moderate') ? 'bg-amber-400' : 'bg-green-400'}`}></div>
+                  <h3 className="text-xl font-bold text-[#0F4C75]">{category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h3>
                 </div>
                 <p className="text-xs text-[#547D9A] font-medium mb-3 italic">This grouping reflects repeated antibiotic exposure contexts observed in surveillance data.</p>
                 <ul className="space-y-3">
@@ -1082,11 +1089,14 @@ const Dashboard: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
 
     useEffect(() => {
+      console.log('[Exposure Pathways] Fetching data...');
       setLoading(true);
       setError(null);
       apiGet<unknown>('/exposure-pathways')
         .then((res) => {
+          console.log('[Exposure Pathways] Raw API response:', res);
           const raw = Array.isArray(res) ? res : [];
+          console.log('[Exposure Pathways] Parsed array length:', raw.length);
           setData(raw);
           setError(null);
         })
@@ -1095,7 +1105,10 @@ const Dashboard: React.FC = () => {
           setError(err instanceof Error ? err.message : 'Failed to load exposure pathways');
           setData([]);
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          console.log('[Exposure Pathways] Loading complete');
+          setLoading(false);
+        });
     }, []);
 
     const sortedData = useMemo(() => {
