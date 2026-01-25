@@ -14,6 +14,17 @@ _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def _path(*parts):
     return os.path.join(_BASE_DIR, *parts)
 
+_model = None
+_preprocessor = None
+_label_encoder = None
+
+def load_model():
+    global _model, _preprocessor, _label_encoder
+    if _model is None:
+        _preprocessor = joblib.load(_path("amr_preprocessor.pkl"))
+        _model = joblib.load(_path("amr_resistance_model.pkl"))
+        _label_encoder = joblib.load(_path("amr_label_encoder.pkl"))
+
 # =========================================================
 # Load dataset (USED ONLY FOR COUNTRY LIST)
 # =========================================================
@@ -21,14 +32,7 @@ _csv_path = _path("Time series of resistance to antibiotics (2018-2023)_All-BLOO
 df = pd.read_csv(_csv_path, sep=",", skiprows=17)
 
 # =========================================================
-# Load trained ML artifacts (UNCHANGED)
-# =========================================================
-model = joblib.load(_path("amr_resistance_model.pkl"))
-preprocessor = joblib.load(_path("amr_preprocessor.pkl"))
-label_encoder = joblib.load(_path("amr_label_encoder.pkl"))
-
-# =========================================================
-# Internal prediction helper (UNCHANGED)
+# Internal prediction helper (uses lazy-loaded _model, etc.)
 # =========================================================
 def predict_resistance(country, region, pathogen, antibiotic, year):
     input_df = pd.DataFrame([{
@@ -39,9 +43,9 @@ def predict_resistance(country, region, pathogen, antibiotic, year):
         "Year": year
     }])
 
-    X_processed = preprocessor.transform(input_df)
-    prediction_encoded = model.predict(X_processed)
-    prediction_label = label_encoder.inverse_transform(prediction_encoded)
+    X_processed = _preprocessor.transform(input_df)
+    prediction_encoded = _model.predict(X_processed)
+    prediction_label = _label_encoder.inverse_transform(prediction_encoded)
 
     return prediction_label[0]
 
@@ -72,13 +76,14 @@ def get_countries():
 # ---------------------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.get_json(silent=True) or {}
+    load_model()  # lazy load happens here
 
+    data = request.get_json(silent=True) or {}
     country = data.get("country")
     year = data.get("year")
 
-    if not country or year is None:
-        return jsonify({"error": "Country and year are required"}), 400
+    if not country or not year:
+        return jsonify({"error": "country and year are required"}), 400
 
     # Fixed pair (intentional design choice)
     region = "Global"
