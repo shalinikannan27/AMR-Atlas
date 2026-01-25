@@ -1,8 +1,8 @@
 flask
 flask-cors
 gunicorn
-pandas<3
+
 numpy<2
-scikit-learn
+pandas<3
 joblib==1.3.2
 scikit-learn==1.6.1
