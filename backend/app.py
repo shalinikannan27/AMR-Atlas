@@ -97,7 +97,37 @@ def home():
 # ---------------------------------------------------------
 # Countries endpoint (FULL LIST, NO FILTERING)
 # Always returns JSON array, never crashes
+# Dynamically detects country column if needed
 # ---------------------------------------------------------
+def _find_country_column(df):
+    """
+    Find the best column for country names.
+    Priority:
+    1. Exact match: 'CountryTerritoryArea'
+    2. Any column containing 'country' (case-insensitive)
+    3. First string column with >10 unique values (not 'Unnamed')
+    """
+    # Priority 1: exact match
+    if "CountryTerritoryArea" in df.columns:
+        return "CountryTerritoryArea"
+    
+    # Priority 2: column containing 'country'
+    for col in df.columns:
+        if "country" in str(col).lower():
+            return col
+    
+    # Priority 3: first good string column
+    for col in df.columns:
+        col_str = str(col)
+        if col_str.lower().startswith("unnamed"):
+            continue
+        if df[col].dtype == "object":
+            unique_count = df[col].dropna().nunique()
+            if unique_count > 10:
+                return col
+    
+    return None
+
 @app.route("/countries", methods=["GET"])
 def get_countries():
     try:
@@ -106,11 +136,12 @@ def get_countries():
             print("[/countries] CSV not loaded")
             return jsonify([])
         
-        col = "CountryTerritoryArea"
-        if col not in df.columns:
-            print(f"[/countries] Column '{col}' not found. Available: {list(df.columns)}")
+        col = _find_country_column(df)
+        if col is None:
+            print(f"[/countries] No suitable country column found. Available: {list(df.columns)}")
             return jsonify([])
         
+        print(f"[/countries] Using country column: {col}")
         countries = df[col].dropna().unique().tolist()
         countries = [str(c).strip() for c in countries if c and str(c).strip()]
         countries.sort()
