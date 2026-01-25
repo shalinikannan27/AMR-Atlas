@@ -3,25 +3,29 @@ from flask_cors import CORS
 import pandas as pd
 import joblib
 import os
+import json
 
 app = Flask(__name__)
 CORS(app)
 
+# Resolve paths relative to this file so they work on Railway (any cwd).
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def _path(*parts):
+    return os.path.join(_BASE_DIR, *parts)
+
 # =========================================================
 # Load dataset (USED ONLY FOR COUNTRY LIST)
 # =========================================================
-df = pd.read_csv(
-    "Time series of resistance to antibiotics (2018-2023)_All-BLOOD.csv",
-    sep=",",
-    skiprows=17
-)
+_csv_path = _path("Time series of resistance to antibiotics (2018-2023)_All-BLOOD.csv")
+df = pd.read_csv(_csv_path, sep=",", skiprows=17)
 
 # =========================================================
 # Load trained ML artifacts (UNCHANGED)
 # =========================================================
-model = joblib.load("amr_resistance_model.pkl")
-preprocessor = joblib.load("amr_preprocessor.pkl")
-label_encoder = joblib.load("amr_label_encoder.pkl")
+model = joblib.load(_path("amr_resistance_model.pkl"))
+preprocessor = joblib.load(_path("amr_preprocessor.pkl"))
+label_encoder = joblib.load(_path("amr_label_encoder.pkl"))
 
 # =========================================================
 # Internal prediction helper (UNCHANGED)
@@ -68,12 +72,12 @@ def get_countries():
 # ---------------------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
     country = data.get("country")
     year = data.get("year")
 
-    if not country or not year:
+    if not country or year is None:
         return jsonify({"error": "Country and year are required"}), 400
 
     # Fixed pair (intentional design choice)
@@ -127,26 +131,28 @@ def predict():
 # ---------------------------------------------------------
 @app.route("/selective-pressure", methods=["GET"])
 def selective_pressure():
-    path = "selective_pressure_clusters.json"
-
+    path = _path("selective_pressure_clusters.json")
     if not os.path.exists(path):
         return jsonify({"error": "Selective pressure data file not found"}), 500
-
-    data = pd.read_json(path)
-    return jsonify(data.to_dict(orient="records"))
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        return jsonify({"error": "Invalid selective pressure data format"}), 500
+    return jsonify(data)
 
 # ---------------------------------------------------------
 # Model 2: Exposure Pathways Explorer (READ FULL JSON)
 # ---------------------------------------------------------
 @app.route("/exposure-pathways", methods=["GET"])
 def exposure_pathways():
-    path = "exposure_pathways.json"
-
+    path = _path("exposure_pathways.json")
     if not os.path.exists(path):
         return jsonify({"error": "Exposure pathways data file not found"}), 500
-
-    data = pd.read_json(path)
-    return jsonify(data.to_dict(orient="records"))
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        return jsonify({"error": "Invalid exposure pathways data format"}), 500
+    return jsonify(data)
 
 # =========================================================
 # Run app

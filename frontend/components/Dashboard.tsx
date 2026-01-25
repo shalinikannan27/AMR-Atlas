@@ -1,5 +1,5 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { apiGet, apiPost } from '../api';
 
 const ANTIBIOTICS_CSV = `Name,Family,Usage,Popular Brand Name
 Amoxicillin,Penicillin,"Bacterial infections (ear, nose, throat, skin)","Amoxil, Trimox"
@@ -279,6 +279,8 @@ const Dashboard: React.FC = () => {
 
   const RiskLab = () => {
     const [countries, setCountries] = useState<string[]>([]);
+    const [countriesLoading, setCountriesLoading] = useState(true);
+    const [countriesError, setCountriesError] = useState<string | null>(null);
     const [country, setCountry] = useState('');
     const [year, setYear] = useState('2023');
     const [isCalculating, setIsCalculating] = useState(false);
@@ -291,16 +293,19 @@ const Dashboard: React.FC = () => {
       confidence: 'High' | 'Moderate';
     } | null>(null);
 
-
     useEffect(() => {
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/countries`)
-        .then(res => res.json())
-        .then(data => {
-          setCountries(data);
+      setCountriesLoading(true);
+      setCountriesError(null);
+      apiGet<string[]>('/countries')
+        .then((data) => {
+          setCountries(Array.isArray(data) ? data : []);
+          setCountriesError(null);
         })
-        .catch(err => {
-          console.error("Failed to fetch countries", err);
-        });
+        .catch((err) => {
+          setCountriesError(err instanceof Error ? err.message : 'Failed to load countries');
+          setCountries([]);
+        })
+        .finally(() => setCountriesLoading(false));
     }, []);
 
     const isExtrapolated = parseInt(year) >= 2024;
@@ -313,29 +318,17 @@ const Dashboard: React.FC = () => {
       setWhyExpanded(false);
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/predict`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            country: country,
-            year: parseInt(year),
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Prediction failed");
-        }
+        const data = await apiPost<{
+          assessment: string;
+          explanation?: string;
+        }>('/predict', { country, year: parseInt(year) });
 
         const confidence =
           country === "Global" || country === "United States"
             ? "High"
             : "Moderate";
 
-        const map: any = {
+        const map: Record<string, { color: string; bg: string; text: string }> = {
           "Lower selective pressure observed": {
             color: "#10B981",
             bg: "#ECFDF5",
@@ -356,16 +349,22 @@ const Dashboard: React.FC = () => {
           }
         };
 
+        const entry = map[data.assessment] ?? {
+          color: "#6B7280",
+          bg: "#F3F4F6",
+          text: data.explanation ?? "Assessment completed."
+        };
+
         setResult({
           assessment: data.assessment,
-          color: map[data.assessment].color,
-          bg: map[data.assessment].bg,
-          text: data.explanation || map[data.assessment].text,
+          color: entry.color,
+          bg: entry.bg,
+          text: data.explanation ?? entry.text,
           confidence,
         });
       } catch (err) {
-        console.error(err);
-        alert("Failed to fetch resistance risk");
+        const msg = err instanceof Error ? err.message : "Failed to fetch resistance risk";
+        alert(msg);
       } finally {
         setIsCalculating(false);
       }
@@ -405,8 +404,18 @@ const Dashboard: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-[#547D9A] mb-2">Region / Country</label>
-                  <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full px-4 py-3 bg-white border border-[#E1E8ED] rounded-xl text-[#0F3C5C] focus:ring-2 focus:ring-[#0FA3B1] outline-none transition-all">
-                    <option value="">Select country</option>
+                  {countriesError && (
+                    <p className="text-sm text-red-500 mb-2 font-medium">{countriesError}</p>
+                  )}
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    disabled={countriesLoading}
+                    className="w-full px-4 py-3 bg-white border border-[#E1E8ED] rounded-xl text-[#0F3C5C] focus:ring-2 focus:ring-[#0FA3B1] outline-none transition-all disabled:opacity-60"
+                  >
+                    <option value="">
+                      {countriesLoading ? "Loading countries…" : "Select country"}
+                    </option>
                     {countries.map((c) => (
                       <option key={c} value={c}>
                         {c}
@@ -932,15 +941,24 @@ const Dashboard: React.FC = () => {
 
   const SelectivePressureLab = () => {
     const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [filterBreadth, setFilterBreadth] = useState<'All' | 'Narrow' | 'Moderate' | 'Broad'>('All');
 
     useEffect(() => {
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/selective-pressure`)
-        .then(res => res.json())
-        .then(data => setData(data))
-        .catch(err => console.error("Failed to fetch selective pressure", err));
+      setLoading(true);
+      setError(null);
+      apiGet<any[]>('/selective-pressure')
+        .then((res) => {
+          setData(Array.isArray(res) ? res : []);
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : 'Failed to load selective pressure data');
+          setData([]);
+        })
+        .finally(() => setLoading(false));
     }, []);
-
-    const [filterBreadth, setFilterBreadth] = useState<'All' | 'Narrow' | 'Moderate' | 'Broad'>('All');
     const [showGroupingInfo, setShowGroupingInfo] = useState(false);
 
     const exposureMap: Record<string, string> = {
@@ -993,7 +1011,15 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {Object.keys(grouped).length > 0 ? (
+        {error ? (
+          <div className="p-12 text-center border-2 border-dashed border-red-200 rounded-[2.5rem] bg-red-50">
+            <p className="text-red-600 font-medium">{error}</p>
+          </div>
+        ) : loading ? (
+          <div className="p-12 text-center border-2 border-dashed border-[#E1E8ED] rounded-[2.5rem]">
+            <p className="text-[#547D9A]">Loading selective pressure data…</p>
+          </div>
+        ) : Object.keys(grouped).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {Object.entries(grouped).map(([category, items]: [string, any], idx: number) => (
               <div key={idx} className="bg-[#F8FBFD] p-6 rounded-2xl border border-[#E1E8ED] hover:shadow-md transition-shadow group/card relative">
@@ -1015,10 +1041,9 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <div className="p-12 text-center border-2 border-dashed border-[#E1E8ED] rounded-[2.5rem]">
-            <p className="text-[#547D9A]">Loading selective pressure data...</p>
+            <p className="text-[#547D9A]">No selective pressure data available.</p>
           </div>
-        )
-        }
+        )}
 
         <div className="mt-8">
           <button
@@ -1040,13 +1065,23 @@ const Dashboard: React.FC = () => {
 
   const ExposurePathwaysExplorer = () => {
     const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
 
     useEffect(() => {
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/exposure-pathways`)
-        .then(res => res.json())
-        .then(data => setData(data))
-        .catch(err => console.error("Failed to fetch exposure pathways", err));
+      setLoading(true);
+      setError(null);
+      apiGet<any[]>('/exposure-pathways')
+        .then((res) => {
+          setData(Array.isArray(res) ? res : []);
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : 'Failed to load exposure pathways');
+          setData([]);
+        })
+        .finally(() => setLoading(false));
     }, []);
 
     const sortedData = useMemo(() => {
@@ -1079,21 +1114,28 @@ const Dashboard: React.FC = () => {
             </select>
           </div>
           <div className="space-y-4">
-            {sortedData.map((pathway: any, idx: number) => (
-              <div key={idx} className="relative group hover:bg-[#F0F7F9] p-2 rounded-xl transition-colors cursor-help" title="Observed repeatedly across surveillance reports.">
-                <div className="flex justify-between items-center mb-2 z-10 relative">
-                  <div className="flex items-center gap-4">
-                    <span className="w-6 h-6 rounded-full bg-[#0F4C75] text-white flex items-center justify-center text-xs font-bold">{idx + 1}</span>
-                    <span className="text-base font-bold text-[#0F4C75]">{pathway.PathogenName} <span className="text-[#547D9A] mx-2">→</span> {pathway.AntibioticName}</span>
-                  </div>
-                  <span className="text-sm font-bold text-[#0FA3B1]">{Math.round(pathway.exposure_score * 100)}%</span>
-                </div>
-                <div className="h-2 bg-[#F8FBFD] rounded-full w-full overflow-hidden">
-                  <div className="h-full bg-[#0FA3B1] rounded-full transition-all duration-1000" style={{ width: `${Math.round(pathway.exposure_score * 100)}%` }}></div>
-                </div>
+            {error ? (
+              <div className="py-12 text-center rounded-2xl bg-red-50 border border-red-200">
+                <p className="text-red-600 font-medium">{error}</p>
               </div>
-            ))}
-            {data.length === 0 && <p className="text-[#547D9A] text-center py-8">Loading exposure pathways...</p>}
+            ) : loading ? (
+              <p className="text-[#547D9A] text-center py-12">Loading exposure pathways…</p>
+            ) : (
+              sortedData.map((pathway: any, idx: number) => (
+                <div key={idx} className="relative group hover:bg-[#F0F7F9] p-2 rounded-xl transition-colors cursor-help" title="Observed repeatedly across surveillance reports.">
+                  <div className="flex justify-between items-center mb-2 z-10 relative">
+                    <div className="flex items-center gap-4">
+                      <span className="w-6 h-6 rounded-full bg-[#0F4C75] text-white flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                      <span className="text-base font-bold text-[#0F4C75]">{pathway.PathogenName} <span className="text-[#547D9A] mx-2">→</span> {pathway.AntibioticName}</span>
+                    </div>
+                    <span className="text-sm font-bold text-[#0FA3B1]">{Math.round((pathway.exposure_score ?? 0) * 100)}%</span>
+                  </div>
+                  <div className="h-2 bg-[#F8FBFD] rounded-full w-full overflow-hidden">
+                    <div className="h-full bg-[#0FA3B1] rounded-full transition-all duration-1000" style={{ width: `${Math.round((pathway.exposure_score ?? 0) * 100)}%` }}></div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="mt-8 text-center pt-4 border-t border-[#E1E8ED]">
