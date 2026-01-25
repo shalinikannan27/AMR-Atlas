@@ -296,12 +296,15 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
       setCountriesLoading(true);
       setCountriesError(null);
-      apiGet<string[]>('/countries')
+      apiGet<unknown>('/countries')
         .then((data) => {
-          setCountries(Array.isArray(data) ? data : []);
+          const raw = Array.isArray(data) ? data : [];
+          const list = raw.filter((c): c is string => typeof c === 'string').map((s) => s.trim()).filter(Boolean);
+          setCountries(list);
           setCountriesError(null);
         })
         .catch((err) => {
+          console.error('[Risk Lab] Failed to load countries:', err);
           setCountriesError(err instanceof Error ? err.message : 'Failed to load countries');
           setCountries([]);
         })
@@ -363,6 +366,7 @@ const Dashboard: React.FC = () => {
           confidence,
         });
       } catch (err) {
+        console.error('[Risk Lab] Predict failed:', err);
         const msg = err instanceof Error ? err.message : "Failed to fetch resistance risk";
         alert(msg);
       } finally {
@@ -414,7 +418,7 @@ const Dashboard: React.FC = () => {
                     className="w-full px-4 py-3 bg-white border border-[#E1E8ED] rounded-xl text-[#0F3C5C] focus:ring-2 focus:ring-[#0FA3B1] outline-none transition-all disabled:opacity-60"
                   >
                     <option value="">
-                      {countriesLoading ? "Loading countries…" : "Select country"}
+                      {countriesLoading ? "Loading countries…" : countries.length === 0 && !countriesError ? "No countries available" : "Select country"}
                     </option>
                     {countries.map((c) => (
                       <option key={c} value={c}>
@@ -422,6 +426,9 @@ const Dashboard: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  {!countriesLoading && !countriesError && countries.length === 0 && (
+                    <p className="text-sm text-amber-600 mt-2 font-medium">No countries available from API.</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#547D9A] mb-2">Surveillance Year</label>
@@ -948,12 +955,13 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
       setLoading(true);
       setError(null);
-      apiGet<any[]>('/selective-pressure')
+      apiGet<unknown>('/selective-pressure')
         .then((res) => {
           setData(Array.isArray(res) ? res : []);
           setError(null);
         })
         .catch((err) => {
+          console.error('[Selective Pressure] Failed to load:', err);
           setError(err instanceof Error ? err.message : 'Failed to load selective pressure data');
           setData([]);
         })
@@ -969,17 +977,21 @@ const Dashboard: React.FC = () => {
     };
 
     const grouped = useMemo(() => {
-      // Filter raw data first
+      const target = exposureMap[filterBreadth];
       const filteredData = filterBreadth === 'All'
         ? data
-        : data.filter(d => d.exposure_cluster === exposureMap[filterBreadth]);
+        : data.filter((d: any) => {
+            const cluster = d.exposure_cluster != null ? String(d.exposure_cluster) : '';
+            return cluster === target;
+          });
 
-      const map: any = {};
-      filteredData.forEach(d => {
-        if (!map[d.exposure_cluster]) {
-          map[d.exposure_cluster] = [];
-        }
-        map[d.exposure_cluster].push(d.PathogenName);
+      const map: Record<string, string[]> = {};
+      filteredData.forEach((d: any) => {
+        const cluster = d.exposure_cluster != null ? String(d.exposure_cluster) : 'unknown';
+        const name = (d.PathogenName != null ? String(d.PathogenName) : 'Unknown').trim();
+        if (!name) return;
+        if (!map[cluster]) map[cluster] = [];
+        map[cluster].push(name);
       });
       return map;
     }, [data, filterBreadth]);
@@ -1072,12 +1084,14 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
       setLoading(true);
       setError(null);
-      apiGet<any[]>('/exposure-pathways')
+      apiGet<unknown>('/exposure-pathways')
         .then((res) => {
-          setData(Array.isArray(res) ? res : []);
+          const raw = Array.isArray(res) ? res : [];
+          setData(raw);
           setError(null);
         })
         .catch((err) => {
+          console.error('[Exposure Pathways] Failed to load:', err);
           setError(err instanceof Error ? err.message : 'Failed to load exposure pathways');
           setData([]);
         })
@@ -1086,9 +1100,9 @@ const Dashboard: React.FC = () => {
 
     const sortedData = useMemo(() => {
       return [...data].sort((a, b) => {
-        return sortOrder === 'most'
-          ? b.exposure_score - a.exposure_score
-          : a.exposure_score - b.exposure_score;
+        const sa = Number((a as any).exposure_score) || 0;
+        const sb = Number((b as any).exposure_score) || 0;
+        return sortOrder === 'most' ? sb - sa : sa - sb;
       });
     }, [data, sortOrder]);
 
@@ -1120,21 +1134,30 @@ const Dashboard: React.FC = () => {
               </div>
             ) : loading ? (
               <p className="text-[#547D9A] text-center py-12">Loading exposure pathways…</p>
+            ) : sortedData.length === 0 ? (
+              <div className="py-12 text-center rounded-2xl border-2 border-dashed border-[#E1E8ED]">
+                <p className="text-[#547D9A] font-medium">No exposure pathways data available.</p>
+              </div>
             ) : (
-              sortedData.map((pathway: any, idx: number) => (
-                <div key={idx} className="relative group hover:bg-[#F0F7F9] p-2 rounded-xl transition-colors cursor-help" title="Observed repeatedly across surveillance reports.">
-                  <div className="flex justify-between items-center mb-2 z-10 relative">
-                    <div className="flex items-center gap-4">
-                      <span className="w-6 h-6 rounded-full bg-[#0F4C75] text-white flex items-center justify-center text-xs font-bold">{idx + 1}</span>
-                      <span className="text-base font-bold text-[#0F4C75]">{pathway.PathogenName} <span className="text-[#547D9A] mx-2">→</span> {pathway.AntibioticName}</span>
+              sortedData.map((pathway: any, idx: number) => {
+                const pathogen = pathway.PathogenName ?? 'Unknown';
+                const antibiotic = pathway.AntibioticName ?? 'Unknown';
+                const score = Number(pathway.exposure_score) || 0;
+                return (
+                  <div key={idx} className="relative group hover:bg-[#F0F7F9] p-2 rounded-xl transition-colors cursor-help" title="Observed repeatedly across surveillance reports.">
+                    <div className="flex justify-between items-center mb-2 z-10 relative">
+                      <div className="flex items-center gap-4">
+                        <span className="w-6 h-6 rounded-full bg-[#0F4C75] text-white flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                        <span className="text-base font-bold text-[#0F4C75]">{pathogen} <span className="text-[#547D9A] mx-2">→</span> {antibiotic}</span>
+                      </div>
+                      <span className="text-sm font-bold text-[#0FA3B1]">{Math.round(score * 100)}%</span>
                     </div>
-                    <span className="text-sm font-bold text-[#0FA3B1]">{Math.round((pathway.exposure_score ?? 0) * 100)}%</span>
+                    <div className="h-2 bg-[#F8FBFD] rounded-full w-full overflow-hidden">
+                      <div className="h-full bg-[#0FA3B1] rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, Math.round(score * 100))}%` }}></div>
+                    </div>
                   </div>
-                  <div className="h-2 bg-[#F8FBFD] rounded-full w-full overflow-hidden">
-                    <div className="h-full bg-[#0FA3B1] rounded-full transition-all duration-1000" style={{ width: `${Math.round((pathway.exposure_score ?? 0) * 100)}%` }}></div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
