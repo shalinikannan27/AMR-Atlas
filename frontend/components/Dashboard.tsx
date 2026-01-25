@@ -294,12 +294,17 @@ const Dashboard: React.FC = () => {
     } | null>(null);
 
     useEffect(() => {
+      console.log('[Risk Lab] Fetching countries...');
       setCountriesLoading(true);
       setCountriesError(null);
       apiGet<unknown>('/countries')
         .then((data) => {
+          console.log('[Risk Lab] API data received:', data);
           const raw = Array.isArray(data) ? data : [];
+          console.log('[Risk Lab] Is array:', Array.isArray(data), 'Length:', raw.length);
           const list = raw.filter((c): c is string => typeof c === 'string').map((s) => s.trim()).filter(Boolean);
+          console.log('[Risk Lab] Processed countries list:', list);
+          console.log('[Risk Lab] State set - countries count:', list.length);
           setCountries(list);
           setCountriesError(null);
         })
@@ -308,7 +313,10 @@ const Dashboard: React.FC = () => {
           setCountriesError(err instanceof Error ? err.message : 'Failed to load countries');
           setCountries([]);
         })
-        .finally(() => setCountriesLoading(false));
+        .finally(() => {
+          console.log('[Risk Lab] Loading complete');
+          setCountriesLoading(false);
+        });
     }, []);
 
     const isExtrapolated = parseInt(year) >= 2024;
@@ -960,8 +968,11 @@ const Dashboard: React.FC = () => {
       apiGet<unknown>('/selective-pressure')
         .then((res) => {
           console.log('[Selective Pressure] Raw API response:', res);
+          console.log('[Selective Pressure] Response type:', typeof res, 'Is array:', Array.isArray(res));
           const arr = Array.isArray(res) ? res : [];
           console.log('[Selective Pressure] Parsed array length:', arr.length);
+          console.log('[Selective Pressure] First item sample:', arr.length > 0 ? arr[0] : 'empty');
+          console.log('[Selective Pressure] State set - data count:', arr.length);
           setData(arr);
           setError(null);
         })
@@ -971,7 +982,7 @@ const Dashboard: React.FC = () => {
           setData([]);
         })
         .finally(() => {
-          console.log('[Selective Pressure] Loading complete');
+          console.log('[Selective Pressure] Loading complete, loading state set to false');
           setLoading(false);
         });
     }, []);
@@ -984,6 +995,7 @@ const Dashboard: React.FC = () => {
     };
 
     const grouped = useMemo(() => {
+      console.log('[Selective Pressure] Computing grouped data, input data length:', data.length, 'filter:', filterBreadth);
       const target = exposureMap[filterBreadth];
       const filteredData = filterBreadth === 'All'
         ? data
@@ -991,6 +1003,8 @@ const Dashboard: React.FC = () => {
             const cluster = d.exposure_cluster != null ? String(d.exposure_cluster) : '';
             return cluster === target;
           });
+
+      console.log('[Selective Pressure] Filtered data length:', filteredData.length);
 
       const map: Record<string, string[]> = {};
       filteredData.forEach((d: any) => {
@@ -1000,8 +1014,12 @@ const Dashboard: React.FC = () => {
         if (!map[cluster]) map[cluster] = [];
         map[cluster].push(name);
       });
+      console.log('[Selective Pressure] Grouped map keys:', Object.keys(map), 'Total groups:', Object.keys(map).length);
       return map;
     }, [data, filterBreadth]);
+
+    // Render-time state check
+    console.log('[Selective Pressure] Render - loading:', loading, 'error:', error, 'data length:', data.length, 'grouped keys:', Object.keys(grouped).length);
 
     return (
       <div className="animate-[fadeIn_0.3s_ease-out]">
@@ -1095,8 +1113,11 @@ const Dashboard: React.FC = () => {
       apiGet<unknown>('/exposure-pathways')
         .then((res) => {
           console.log('[Exposure Pathways] Raw API response:', res);
+          console.log('[Exposure Pathways] Response type:', typeof res, 'Is array:', Array.isArray(res));
           const raw = Array.isArray(res) ? res : [];
           console.log('[Exposure Pathways] Parsed array length:', raw.length);
+          console.log('[Exposure Pathways] First item sample:', raw.length > 0 ? raw[0] : 'empty');
+          console.log('[Exposure Pathways] State set - data count:', raw.length);
           setData(raw);
           setError(null);
         })
@@ -1106,18 +1127,24 @@ const Dashboard: React.FC = () => {
           setData([]);
         })
         .finally(() => {
-          console.log('[Exposure Pathways] Loading complete');
+          console.log('[Exposure Pathways] Loading complete, loading state set to false');
           setLoading(false);
         });
     }, []);
 
     const sortedData = useMemo(() => {
-      return [...data].sort((a, b) => {
+      console.log('[Exposure Pathways] Computing sorted data, input length:', data.length, 'sort order:', sortOrder);
+      const sorted = [...data].sort((a, b) => {
         const sa = Number((a as any).exposure_score) || 0;
         const sb = Number((b as any).exposure_score) || 0;
         return sortOrder === 'most' ? sb - sa : sa - sb;
       });
+      console.log('[Exposure Pathways] Sorted data length:', sorted.length);
+      return sorted;
     }, [data, sortOrder]);
+
+    // Render-time state check
+    console.log('[Exposure Pathways] Render - loading:', loading, 'error:', error, 'data length:', data.length, 'sorted length:', sortedData.length);
 
     return (
       <div className="animate-[fadeIn_0.3s_ease-out]">
