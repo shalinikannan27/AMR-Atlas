@@ -4,6 +4,7 @@ import pandas as pd
 import joblib
 import os
 import json
+import traceback
 
 app = Flask(__name__)
 CORS(app)
@@ -96,36 +97,36 @@ def home():
 
 # ---------------------------------------------------------
 # Countries endpoint (FULL LIST, NO FILTERING)
+# COMPLETELY ISOLATED - does NOT use any global dataframe
 # Always returns JSON array, never crashes
-# Loads CSV fresh (isolated from global df) to avoid side effects
 # ---------------------------------------------------------
 @app.route("/countries", methods=["GET"])
 def get_countries():
     try:
-        # Load CSV fresh - do NOT reuse global df
+        # =====================================================
+        # ISOLATED CSV LOAD - No global state, fresh every call
+        # =====================================================
         csv_path = _path("Time series of resistance to antibiotics (2018-2023)_All-BLOOD.csv")
         df = pd.read_csv(csv_path, sep=",", skiprows=17)
         
-        # Strip column names to remove any whitespace
+        # Immediately clean column names
         df.columns = df.columns.str.strip()
         
-        print(f"[/countries] CSV loaded. Columns: {list(df.columns)}")
-        
-        # Access CountryTerritoryArea directly
-        col = "CountryTerritoryArea"
-        if col not in df.columns:
-            print(f"[/countries] Column '{col}' not found. Available: {list(df.columns)}")
-            return jsonify([])
-        
-        # Extract unique countries
-        countries = df[col].dropna().astype(str).str.strip().unique().tolist()
-        countries = [c for c in countries if c]  # Remove empty strings
+        # Extract countries directly - no inference
+        countries = (
+            df["CountryTerritoryArea"]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
         countries.sort()
         
-        print(f"[/countries] Countries loaded: {len(countries)}")
+        print(f"Countries endpoint returned {len(countries)} items")
         return jsonify(countries)
     except Exception as e:
-        print(f"[/countries] Error: {e}")
+        print(f"[/countries] EXCEPTION: {e}")
+        print(traceback.format_exc())
         return jsonify([])
 
 # ---------------------------------------------------------
