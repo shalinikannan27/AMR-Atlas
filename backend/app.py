@@ -12,6 +12,12 @@ CORS(app)
 # Resolve paths relative to this file so they work on Railway (any cwd).
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Startup logging
+print(f"[STARTUP] Flask app initialized")
+print(f"[STARTUP] Base directory: {_BASE_DIR}")
+print(f"[STARTUP] Python version: {os.sys.version}")
+print(f"[STARTUP] All routes registered successfully")
+
 def _path(*parts):
     return os.path.join(_BASE_DIR, *parts)
 
