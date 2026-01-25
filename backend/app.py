@@ -16,76 +16,50 @@ def _path(*parts):
     return os.path.join(_BASE_DIR, *parts)
 
 # =========================================================
-# Safe ML loading (app must start even if ML fails)
+# ML MODELS - LAZY LOADED ONLY (never at import time)
 # =========================================================
 _model = None
 _preprocessor = None
 _label_encoder = None
+_ml_load_attempted = False
 _ml_load_error = None
 
 def load_model():
-    """Lazy-load ML artifacts. Safe: never crashes the app."""
-    global _model, _preprocessor, _label_encoder, _ml_load_error
-    if _model is not None:
-        return True  # already loaded
-    if _ml_load_error is not None:
-        return False  # already failed, don't retry
+    """
+    Lazy-load ML artifacts ONLY when /predict is called.
+    Never crashes the app - returns False on failure.
+    """
+    global _model, _preprocessor, _label_encoder, _ml_load_attempted, _ml_load_error
+    
+    # Already loaded successfully
+    if _model is not None and _preprocessor is not None and _label_encoder is not None:
+        return True
+    
+    # Already attempted and failed - don't retry
+    if _ml_load_attempted and _ml_load_error is not None:
+        return False
+    
+    _ml_load_attempted = True
+    
     try:
+        print("[ML] Attempting to load sklearn models...")
         _preprocessor = joblib.load(_path("amr_preprocessor.pkl"))
+        print("[ML] Preprocessor loaded")
         _model = joblib.load(_path("amr_resistance_model.pkl"))
+        print("[ML] Model loaded")
         _label_encoder = joblib.load(_path("amr_label_encoder.pkl"))
-        print("[ML] Model loaded successfully")
+        print("[ML] Label encoder loaded")
+        print("[ML] All models loaded successfully")
         return True
     except Exception as e:
         _ml_load_error = str(e)
-        print(f"[ML] Failed to load model: {e}")
+        print(f"[ML] FAILED to load models: {e}")
+        print("[ML] Full traceback:")
+        print(traceback.format_exc())
         _model = None
         _preprocessor = None
         _label_encoder = None
         return False
-
-# =========================================================
-# Safe CSV loading for country list
-# =========================================================
-_df = None
-_df_load_error = None
-
-def _load_csv():
-    global _df, _df_load_error
-    if _df is not None:
-        return _df
-    if _df_load_error is not None:
-        return None
-    try:
-        csv_path = _path("Time series of resistance to antibiotics (2018-2023)_All-BLOOD.csv")
-        _df = pd.read_csv(csv_path, sep=",", skiprows=17)
-        print(f"[CSV] Loaded. Columns: {list(_df.columns)}")
-        return _df
-    except Exception as e:
-        _df_load_error = str(e)
-        print(f"[CSV] Failed to load: {e}")
-        return None
-
-# Load CSV at startup (safe)
-_load_csv()
-
-# =========================================================
-# Internal prediction helper (uses lazy-loaded _model, etc.)
-# =========================================================
-def predict_resistance(country, region, pathogen, antibiotic, year):
-    input_df = pd.DataFrame([{
-        "CountryTerritoryArea": country,
-        "WHORegionName": region,
-        "PathogenName": pathogen,
-        "AbTargets": antibiotic,
-        "Year": year
-    }])
-
-    X_processed = _preprocessor.transform(input_df)
-    prediction_encoded = _model.predict(X_processed)
-    prediction_label = _label_encoder.inverse_transform(prediction_encoded)
-
-    return prediction_label[0]
 
 # =========================================================
 # Routes
@@ -97,22 +71,20 @@ def home():
 
 # ---------------------------------------------------------
 # Countries endpoint (FULL LIST, NO FILTERING)
-# COMPLETELY ISOLATED - does NOT use any global dataframe
+# COMPLETELY ISOLATED - NO ML, NO GLOBAL STATE
 # Always returns JSON array, never crashes
 # ---------------------------------------------------------
 @app.route("/countries", methods=["GET"])
 def get_countries():
     try:
-        # =====================================================
-        # ISOLATED CSV LOAD - No global state, fresh every call
-        # =====================================================
+        # ISOLATED CSV LOAD - fresh every call, no global state
         csv_path = _path("Time series of resistance to antibiotics (2018-2023)_All-BLOOD.csv")
         df = pd.read_csv(csv_path, sep=",", skiprows=17)
         
         # Immediately clean column names
         df.columns = df.columns.str.strip()
         
-        # Extract countries directly - no inference
+        # Extract countries directly
         countries = (
             df["CountryTerritoryArea"]
             .dropna()
@@ -131,16 +103,22 @@ def get_countries():
 
 # ---------------------------------------------------------
 # Risk Lab / Surveillance Insight endpoint
-# Returns 503 if ML unavailable (graceful degradation)
+# LAZY LOADS ML - graceful degradation if models fail
 # ---------------------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
-    # Attempt to load ML (safe)
+    # Lazy load ML models (only happens here, never at import)
     if not load_model():
-        return jsonify({"error": "Prediction service unavailable"}), 503
+        return jsonify({
+            "error": "Prediction service unavailable",
+            "reason": _ml_load_error or "Model failed to load"
+        }), 503
 
     if _model is None or _preprocessor is None or _label_encoder is None:
-        return jsonify({"error": "Prediction service unavailable"}), 503
+        return jsonify({
+            "error": "Prediction service unavailable",
+            "reason": "Model components not initialized"
+        }), 503
 
     data = request.get_json(silent=True) or {}
     country = data.get("country")
@@ -167,17 +145,22 @@ def predict():
         )
 
     try:
-        raw_output = predict_resistance(
-            country=country,
-            region=region,
-            pathogen=pathogen,
-            antibiotic=antibiotic,
-            year=year
-        ).lower()
+        # Build input dataframe
+        input_df = pd.DataFrame([{
+            "CountryTerritoryArea": country,
+            "WHORegionName": region,
+            "PathogenName": pathogen,
+            "AbTargets": antibiotic,
+            "Year": year
+        }])
 
-        # ---------------------------------------------
-        # LANGUAGE SHIFT (NO HIGH / MEDIUM / LOW RISK)
-        # ---------------------------------------------
+        # Run prediction
+        X_processed = _preprocessor.transform(input_df)
+        prediction_encoded = _model.predict(X_processed)
+        prediction_label = _label_encoder.inverse_transform(prediction_encoded)
+        raw_output = str(prediction_label[0]).lower()
+
+        # Map to assessment
         if "high" in raw_output:
             assessment = "Higher probability of resistant strains surviving"
         elif "medium" in raw_output:
@@ -193,11 +176,12 @@ def predict():
         })
 
     except Exception as e:
-        print(f"[/predict] Error: {e}")
+        print(f"[/predict] Error during prediction: {e}")
+        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
 # ---------------------------------------------------------
-# Model 1: Selective Pressure Lab (READ FULL JSON)
+# Selective Pressure Lab - NO ML, JSON ONLY
 # Always returns array, never crashes
 # ---------------------------------------------------------
 @app.route("/selective-pressure", methods=["GET"])
@@ -212,13 +196,15 @@ def selective_pressure():
         if not isinstance(data, list):
             print(f"[/selective-pressure] Data is not a list: {type(data)}")
             return jsonify([])
+        print(f"[/selective-pressure] Returned {len(data)} items")
         return jsonify(data)
     except Exception as e:
         print(f"[/selective-pressure] Error: {e}")
+        print(traceback.format_exc())
         return jsonify([])
 
 # ---------------------------------------------------------
-# Model 2: Exposure Pathways Explorer (READ FULL JSON)
+# Exposure Pathways Explorer - NO ML, JSON ONLY
 # Always returns array, never crashes
 # ---------------------------------------------------------
 @app.route("/exposure-pathways", methods=["GET"])
@@ -233,9 +219,11 @@ def exposure_pathways():
         if not isinstance(data, list):
             print(f"[/exposure-pathways] Data is not a list: {type(data)}")
             return jsonify([])
+        print(f"[/exposure-pathways] Returned {len(data)} items")
         return jsonify(data)
     except Exception as e:
         print(f"[/exposure-pathways] Error: {e}")
+        print(traceback.format_exc())
         return jsonify([])
 
 # =========================================================
